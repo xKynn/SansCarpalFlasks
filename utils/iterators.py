@@ -18,8 +18,3 @@ class RandomKeyIterator:
         key = self.keys.pop(-1)
         self.visited.append(key)
         return key
-
-if __name__ == "__main__":
-        keys = RandomKeyIterator([1, 2, 3, 4, 5])
-        for i in keys:
-            print(i)
