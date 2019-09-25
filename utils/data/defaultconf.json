@@ -1,5 +1,6 @@
 {
   "keys": ["1", "2", "3", "4", "5"],
   "keys_delay": [0.4, 0.15],
-  "press_release_delay": [0.04, 0.17]
+  "press_release_delay": [0.04, 0.17],
+  "sequence_interval": [3.40, 4.00]
 }
