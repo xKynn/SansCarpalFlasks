@@ -32,7 +32,6 @@ class FlaskSequence:
             self.sequence_end = True
         return key[0]
 
-
 class FlaskMacro:
     def __init__(self, flasks: FlaskSequence, release_delay: tuple = (0.04, 0.17)):
         self.controller = Controller()
@@ -54,6 +53,7 @@ class FlaskMacro:
 
     def press_key(self, key: str, delay_range: tuple = None):
         try:
+            self.is_paused.wait()
             self.controller.press(key)
 
             if delay_range:
@@ -68,7 +68,7 @@ class FlaskMacro:
     def start(self):
         self.keyboard_listener.start()
         while True:
-            # Check if we're paused, if yes, blo434ck till Event is set again.
+            # Check if we're paused, if yes, block till Event is set again.
             logging.info("waiting for pause to be set")
             self.is_paused.wait()
 
