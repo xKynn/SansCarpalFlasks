@@ -3,7 +3,7 @@ import time
 import random
 
 from utils.configs import get_config
-from utils.listener import KeyboardListener
+from utils.listener import KeyboardListener, LegalListener
 from utils.iterators import KeyIterator
 from threading import Thread, Event
 from pynput.keyboard import Controller
@@ -30,6 +30,23 @@ class FlaskSequence:
         key = next(self._iter_keys)
         if key[1]:
             self.sequence_end = True
+        return key[0]
+
+class LegalSequence:
+    def __init__(self, keys: list):
+        self.keys = keys
+        self._iter_keys = KeyIterator(keys)
+        self.sequence_end = False
+
+    @property
+    def next_flask(self):
+        if self.sequence_end:
+            self.sequence_end = False
+
+        key = next(self._iter_keys)
+        if key[1]:
+            self.sequence_end = True
+
         return key[0]
 
 class FlaskMacro:
@@ -74,10 +91,52 @@ class FlaskMacro:
 
             self.press_key(self.flasks.next_flask, self.release_delay)
 
+class LegalMacro:
+    def __init__(self, flasks: LegalSequence, activate_key):
+        self.controller = Controller()
+        self.flasks = flasks
+        self.keyboard_listener = LegalListener(self)
+        self.is_paused = Event()
+        self.is_paused.set()
+        self.activate_key = activate_key
+
+    @property
+    def is_macro_paused(self):
+        return not self.is_paused.is_set()
+
+    def pause(self):
+        self.is_paused.clear()
+
+    def resume(self):
+        self.is_paused.set()
+
+    def press_next_key(self):
+        if self.is_macro_paused:
+            return
+        try:
+            key = self.flasks.next_flask
+            logging.debug(f"Pressing {key}")
+            self.controller.press(key)
+            delay = random.uniform(0.04, 0.17)
+            time.sleep(delay)
+            self.controller.release(key)
+        except (ValueError, AttributeError) as e:
+            logging.error(f"Invalid key in macro sequence")
+
+
+    def start(self):
+        self.keyboard_listener.start()
+        while True:
+            self.is_paused.wait()
+
 
 if __name__ == "__main__":
     config = get_config()
-    sequence = FlaskSequence(config['keys'], tuple(config['keys_delay']), tuple(config['sequence_interval']))
-    macro = FlaskMacro(sequence, tuple(config['press_release_delay']))
+    if config['legal_macro_key']:
+        sequence = LegalSequence(config['keys'])
+        macro = LegalMacro(sequence, config['legal_macro_key'])
+    else:
+        sequence = FlaskSequence(config['keys'], tuple(config['keys_delay']), tuple(config['sequence_interval']))
+        macro = FlaskMacro(sequence, tuple(config['press_release_delay']))
     logging.basicConfig(level=logging.DEBUG)
     macro.start()
